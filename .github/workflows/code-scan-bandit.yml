@@ -3,8 +3,6 @@ name: Bandit
 on:
   pull_request:
     branches: [ "main" ]
-  schedule:
-    - cron: '40 10 * * 6'
 
 jobs:
   bandit:
@@ -49,7 +47,7 @@ jobs:
             const block = process.env.block;
             const { context, github } = require('@actions/github');
             if (block === 'true') {
-              github.rest.issues.createComment({
+              await github.rest.issues.createComment({
                 issue_number: context.payload.pull_request.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -57,7 +55,7 @@ jobs:
               });
               throw new Error('Blocking PR due to critical vulnerabilities');
             } else {
-              github.rest.issues.createComment({
+              await github.rest.issues.createComment({
                 issue_number: context.payload.pull_request.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -71,7 +69,7 @@ jobs:
         with:
           script: |
             const { context, github } = require('@actions/github');
-            github.rest.pulls.merge({
+            await github.rest.pulls.merge({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: context.payload.pull_request.number,
