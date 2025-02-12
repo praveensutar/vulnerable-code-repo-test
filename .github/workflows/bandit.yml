@@ -49,7 +49,7 @@ jobs:
           # skips: # optional, default is DEFAULT
           # path to a .bandit file that supplies command line arguments
           # ini_path: # optional, default is DEFAULT
-          
+
       - name: Run Bandit
         run: bandit -r . -f json -o results.json
       - name: Check for Critical Vulnerabilities
@@ -81,15 +81,14 @@ jobs:
                 repo: context.repo.repo,
                 body: 'Successful'
               });
-          }
-    - name: Merge Pull Request
-      if: steps.bandit-check.outputs.block == 'false'
-      uses: actions/github-script@v3
-      with:
-        script: |
-          github.pulls.merge({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            pull_number: context.issue.number,
-          });
-
+            }
+      - name: Merge Pull Request
+        if: steps.bandit-check.outputs.block == 'false'
+        uses: actions/github-script@v3
+        with:
+          script: |
+            github.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
