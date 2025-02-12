@@ -1,8 +1,6 @@
 name: Bandit
 
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
   schedule:
@@ -13,7 +11,6 @@ jobs:
     permissions:
       contents: read
       pull-requests: write  # Ensure permissions to write comments on PRs
-      actions: read
 
     runs-on: ubuntu-latest
     steps:
@@ -44,20 +41,16 @@ jobs:
             echo "block=false" >> $GITHUB_ENV
           fi
 
-      - name: Debug Context
-        uses: actions/github-script@v6
-        with:
-          script: |
-            console.log('Context:', JSON.stringify(context, null, 2));
-
       - name: Comment on PR
+        if: always()
         uses: actions/github-script@v6
         with:
           script: |
             const block = process.env.block;
+            const { context, github } = require('@actions/github');
             if (block === 'true') {
               github.rest.issues.createComment({
-                issue_number: context.issue.number,
+                issue_number: context.payload.pull_request.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 body: 'Block'
@@ -65,7 +58,7 @@ jobs:
               throw new Error('Blocking PR due to critical vulnerabilities');
             } else {
               github.rest.issues.createComment({
-                issue_number: context.issue.number,
+                issue_number: context.payload.pull_request.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 body: 'Successful'
@@ -77,8 +70,9 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
+            const { context, github } = require('@actions/github');
             github.rest.pulls.merge({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: context.issue.number,
+              pull_number: context.payload.pull_request.number,
             });
