@@ -1,0 +1,51 @@
+name: Bandit Security Scan
+
+on:
+  pull_request:
+    branches:
+      - main  # Replace with your default branch name
+
+jobs:
+  bandit-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install Bandit
+        run: pip install bandit
+
+      - name: Run Bandit Scan
+        id: bandit
+        run: |
+          bandit -r . -f json -o bandit_results.json || true
+          echo "Bandit scan completed."
+
+      - name: Check for Critical Vulnerabilities
+        id: check-vulnerabilities
+        run: |
+          if grep -q '"issue_confidence": "HIGH"' bandit_results.json || grep -q '"issue_severity": "HIGH"' bandit_results.json; then
+            echo "block_pull_request=true" >> $GITHUB_OUTPUT
+          else
+            echo "block_pull_request=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Block Pull Request if Critical Vulnerability Found
+        if: steps.check-vulnerabilities.outputs.block_pull_request == 'true'
+        run: |
+          echo "Critical or High severity vulnerability found. Blocking pull request."
+          gh pr comment ${{ github.event.pull_request.number }} --body "Block"
+          exit 1
+
+      - name: Auto-Merge Pull Request if No Critical Vulnerabilities
+        if: steps.check-vulnerabilities.outputs.block_pull_request == 'false'
+        run: |
+          echo "No critical vulnerabilities found. Auto-merging pull request."
+          gh pr merge ${{ github.event.pull_request.number }} --auto --merge
+          gh pr comment ${{ github.event.pull_request.number }} --body "Successful"
